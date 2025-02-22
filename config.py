@@ -13,7 +13,7 @@ REPORTS_DIR = os.path.join(SCRIPT_DIR, "reports")
 os.makedirs(REPORTS_DIR, mode=0o777, exist_ok=True)
 
 # Database
-DATABASE_URL = "mysql://root:123456@localhost:3306/calculatorDev"
+DATABASE_URL = "mysql://admin:Bank@123456@178.16.138.52:3306/calculatorDev"
 engine = create_engine(DATABASE_URL, pool_size=5, max_overflow=10)
 
 # Timezone
