@@ -2,7 +2,7 @@ import os
 import pytz
 import logging
 from sqlalchemy import create_engine
-
+from urllib.parse import quote_plus
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -12,8 +12,16 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPORTS_DIR = os.path.join(SCRIPT_DIR, "reports")
 os.makedirs(REPORTS_DIR, mode=0o777, exist_ok=True)
 
+
+# Database credentials
+username = "admin"
+password = quote_plus("Bank@123456")  # URL encode the password
+host = "178.16.138.52"
+port = "3306"
+database = "calculatorDev"
+
 # Database
-DATABASE_URL = "mysql://admin:Bank@123456@178.16.138.52:3306/calculatorDev"
+DATABASE_URL = f"mysql://{username}:{password}@{host}:{port}/{database}"
 engine = create_engine(DATABASE_URL, pool_size=5, max_overflow=10)
 
 # Timezone
