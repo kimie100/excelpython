@@ -12,7 +12,7 @@ from excel_service import create_excel_report
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000","https://bank.ocean00.com"],  # Allow requests from this origin
+    allow_origins=["http://localhost:3000","https://bank.ocean00.com","http://bank.ocean00.com"],  # Allow requests from this origin
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
