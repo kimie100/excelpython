@@ -26,9 +26,9 @@ def get_banks(date_range):
                     b.name,
                     b.accountNo
                 FROM 
-                    task AS a 
+                    Task AS a 
                 RIGHT JOIN 
-                    bank AS b 
+                    Bank AS b 
                 ON 
                     a.bankId = b.id 
                 AND 
@@ -56,7 +56,7 @@ def get_transactions(bank_id, date_range=None):
                 FROM 
                     Task as a 
                 RIGHT JOIN 
-	                branch as b
+	                Branch as b
                 ON 
 	                a.branchId = b.id
                 WHERE bankId = :bank_id
@@ -103,9 +103,9 @@ def get_branches(date_range):
                     IFNULL(SUM(a.amount), 0) AS total,
                     b.code 
                 FROM 
-                    task AS a 
+                    Task AS a 
                 RIGHT JOIN 
-                    branch AS b 
+                    Branch AS b 
                 ON 
                     a.branchId = b.id 
                 AND a.createdAt BETWEEN :start_date AND :end_date
