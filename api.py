@@ -8,7 +8,7 @@ import logging
 
 from config import logger, REPORTS_DIR
 from excel_service import create_excel_report
-
+from data_service import get_total
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +43,24 @@ async def generate_excel(request: ReportRequest, background_tasks: BackgroundTas
         report_id = datetime.now().strftime('%Y%m%d_%H%M%S')
         date_range = request.get_date_range()
         
+        # Check if data exists for the date range by getting the totals
+        try:
+            totals = get_total(date_range)
+            
+            # If all totals are 0, there's no data for the report
+            if totals["grand_total"] == 0:
+                return {
+                    "status": "no_data",
+                    "message": "No transaction data available for the selected date range",
+                    "date_range": {
+                        "start_date": request.start_date or datetime.now().strftime('%Y-%m-%d'),
+                        "end_date": request.end_date or datetime.now().strftime('%Y-%m-%d')
+                    }
+                }
+        except Exception as e:
+            logger.error(f"Error checking data existence: {str(e)}")
+            # Continue with report generation if we can't verify data existence
+            
         logger.info(f"Starting background task for report_id: {report_id} with date range: {date_range}")
         background_tasks.add_task(create_excel_report, report_id, date_range)
         

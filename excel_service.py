@@ -1,7 +1,9 @@
 import os
 from openpyxl import Workbook
-from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
+from openpyxl.styles import PatternFill, Border, Side, Alignment, Font,Color
 from openpyxl.utils import get_column_letter
+from openpyxl.cell.text import InlineFont
+from openpyxl.cell.rich_text import TextBlock, CellRichText
 import pytz
 from datetime import datetime
 
@@ -51,10 +53,16 @@ def create_excel_report(report_id: str,date_range=None):
             # Handle potential None values
             name = getattr(account, 'name', '') or ''
             account_no = getattr(account, 'accountNo', '') or ''
-            cell.value = f"{name} {account_no}".strip()
+            if isinstance(account_no, int):
+                account_no = str(account_no)
+            red = InlineFont(color='FF0000')
+            black  = InlineFont(color='000000')
+            rich_string1 = CellRichText([TextBlock(black, name + ' '),  TextBlock(red, account_no)])
+            # cell.value = f"{name} {account_no}".strip()
+            cell.value = rich_string1
             cell.font = Font(bold=True)
             cell.alignment = Alignment(horizontal='center')
-            cell.fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
+            # cell.fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
             cell.border = thin_border
             ws.merge_cells(start_row=2, start_column=current_col, end_row=2, end_column=current_col + 4)
             current_col += 6
@@ -68,7 +76,7 @@ def create_excel_report(report_id: str,date_range=None):
                 cell = ws.cell(row=3, column=current_col, value=header)
                 cell.font = Font(bold=True)
                 cell.border = thin_border
-                cell.fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
+                # cell.fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
                 current_col += 1
             current_col += 1
         
@@ -84,47 +92,7 @@ def create_excel_report(report_id: str,date_range=None):
                
                 # Get and process transactions for this account
                 transactions = get_transactions(account.id,date_range)
-                total_rowFormula = 0
-                for idx, trans in enumerate(transactions, start=4):
-                    try:
-                        # Handle potential None or invalid datetime values
-                        created_at = getattr(trans, 'createdAt', None)
-                        typeTask = getattr(trans, 'type', '')
-                        code = getattr(trans, 'code', '')
-                        color_Branch = get_color_by_code(code)
-                        if created_at:
-                            if created_at.tzinfo is None:
-                                created_at = pytz.utc.localize(created_at)
-
-                            malaysia_time = created_at.astimezone(malaysia_tz)    
-                            date_str = malaysia_time.strftime('%Y-%m-%d')
-                            time_str = malaysia_time.strftime('%H:%M:%S')
-                        else:
-                            date_str = ''
-                            time_str = ''
-                            
-                        ws.cell(row=idx, column=current_col).value = date_str
-                        ws.cell(row=idx, column=current_col + 1).value = getattr(trans, 'code', '')
-                        ws.cell(row=idx, column=current_col + 1).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
-                        ws.cell(row=idx, column=current_col + 1).border = thin_border
-                        if typeTask == "WITHDRAW":
-                             ws.cell(row=idx, column=current_col + 2).value = getattr(trans, 'amount', 0)
-                        else:
-                            ws.cell(row=idx, column=current_col + 3).value = getattr(trans, 'amount', '')
-                        ws.cell(row=idx, column=current_col + 2).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
-                        ws.cell(row=idx, column=current_col + 2).border = thin_border
-                        ws.cell(row=idx, column=current_col + 3).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
-                        ws.cell(row=idx, column=current_col + 3).border = thin_border
-                        ws.cell(row=idx, column=current_col + 4).value = time_str
-                        total_rowFormula = idx
-                    except Exception as e:
-                        logger.error(f"Error processing transaction: {str(e)}")
-                        continue
-                        
-                # Add formulas and totals
-                _add_bank_summary(ws, current_col, total_rowFormula)
-                
-                # ADD BANK 
+                 # ADD BANK 
                 color_bank = "FFC080"
                 color_value_bank ="FFC0C0"
                 name_Bank = get_column_letter(current_col)
@@ -136,7 +104,59 @@ def create_excel_report(report_id: str,date_range=None):
                 ws.cell(row=row_bank, column=2,).fill = PatternFill(start_color=color_value_bank, end_color=color_value_bank, fill_type="solid")
                 ws.cell(row=row_bank, column=2,).border  = thin_border
                 row_bank += 1
-                logger.info(f"row_bank: {value_total_Bank}")
+                logger.info(f"row bank name{name_Bank}: {value_total_Bank}")
+                logger.info(f"row {row_bank}: {row_bank}")
+                if not transactions:
+                    logger.info(f"list tast for bank ${account.id}: {transactions}")
+                else:
+                    total_rowFormula = 0
+                    for idx, trans in enumerate(transactions, start=4):
+                        try:
+                            # Handle potential None or invalid datetime values
+                            created_at = getattr(trans, 'createdAt', None)
+                            typeTask = getattr(trans, 'type', '')
+                            code = getattr(trans, 'code', '')
+                            color_Branch = get_color_by_code(code)
+                            if created_at:
+                                if created_at.tzinfo is None:
+                                    created_at = pytz.utc.localize(created_at)
+
+                                malaysia_time = created_at.astimezone(malaysia_tz)    
+                                date_str = malaysia_time.strftime('%Y-%m-%d')
+                                time_str = malaysia_time.strftime('%H:%M:%S')
+                            else:
+                                date_str = ''
+                                time_str = ''
+                                
+                            ws.cell(row=idx, column=current_col).value = date_str
+                            ws.cell(row=idx, column=current_col + 1).value = getattr(trans, 'code', '')
+
+                            
+                            ws.cell(row=idx, column=current_col + 1).border = thin_border
+                            if typeTask == "WITHDRAW":
+                                ws.cell(row=idx, column=current_col + 2).value = getattr(trans, 'amount', 0)
+                            else:
+                                ws.cell(row=idx, column=current_col + 3).value = getattr(trans, 'amount', '')
+                            
+                            ws.cell(row=idx, column=current_col + 2).border = thin_border
+                            ws.cell(row=idx, column=current_col + 3).border = thin_border
+                            ws.cell(row=idx, column=current_col + 4).value = time_str
+                            #color row
+                            ws.cell(row=idx, column=current_col).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
+                            ws.cell(row=idx, column=current_col + 1).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
+                            ws.cell(row=idx, column=current_col + 2).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
+                            ws.cell(row=idx, column=current_col + 3).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
+                            ws.cell(row=idx, column=current_col + 4).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
+                            total_rowFormula = idx
+                        except Exception as e:
+                            logger.error(f"Error processing transaction: {str(e)}")
+                            continue
+                            
+                    # Add formulas and totals
+                    _add_bank_summary(ws, current_col, total_rowFormula)
+                    
+                   
+                    logger.info(f"row_bank: {value_total_Bank}")
             except Exception as e:
                 logger.error(f"Error processing account {getattr(account, 'id', 'unknown')}: {str(e)}")
                 continue
@@ -145,7 +165,7 @@ def create_excel_report(report_id: str,date_range=None):
         
         array_length = len(accounts)
         last_row_Bank = array_length
-        
+        logger.info(f"last_row_Bank: {last_row_Bank}")
         # Add bank summary section
         _add_bank_list_summary(ws, last_row_Bank,date_range)
         
@@ -213,7 +233,7 @@ def _add_bank_list_summary(ws, last_row_Bank,date_range):
         bottom=Side(style='thin')
     )
     
-    summary_row = last_row_Bank + last_row_Bank + 1
+    summary_row = 4 + last_row_Bank 
     totals = get_total(date_range)
     ws.cell(row=summary_row, column=1, value="cash")
     #center cash C0C0FF
@@ -233,7 +253,7 @@ def _add_bank_list_summary(ws, last_row_Bank,date_range):
     ws.cell(row=summary_row + 3, column=1, value="今日未领")
     ws.cell(row=summary_row + 3, column=2, value=totals['pending_total'])
     ws.cell(row=summary_row + 4, column=1, value="TOTAL")
-    ws.cell(row=summary_row + 4, column=2, value=totals['grand_total'])
+    ws.cell(row=summary_row + 4, column=2, value=f"=SUM(B{summary_row + 2}:B{summary_row + 3})")
     ws.cell(row=summary_row + 5, column=1, value="场口已领")
     ws.cell(row=summary_row + 6, column=1, value="")
     ws.cell(row=summary_row + 7, column=1, value="自动计算")
@@ -275,7 +295,7 @@ def _add_branch_data(ws, last_row_Bank,date_range):
     if not branches:
         raise ValueError("No branches found")
 
-    branch_start_row = last_row_Bank + last_row_Bank + 9
+    branch_start_row = 4 + last_row_Bank + 8
     lastBranchRow = 0
     for idx, branch in enumerate(branches, start=branch_start_row):
         try:
@@ -300,7 +320,7 @@ def _add_branch_data(ws, last_row_Bank,date_range):
     cell_withdraw = get_column_letter( 2)
     summary_row = last_row_Bank + last_row_Bank + 1
     logger.info(f"Successfully lastBranchRow: {lastBranchRow}")
-    ws.cell(row=summary_row + 4, column=2, value=f"=SUM({cell_withdraw}{branch_start_row}:{cell_withdraw}{lastBranchRow+8})")
+    ws.cell(row=summary_row + 5, column=2, value=f"=SUM({cell_withdraw}{branch_start_row}:{cell_withdraw}{lastBranchRow+8})")
 def get_color_by_code(code):
     """Get hex color code by color reference code"""
     return color_code_mapping.get(code, "Color code not found")

@@ -13,12 +13,21 @@ REPORTS_DIR = os.path.join(SCRIPT_DIR, "reports")
 os.makedirs(REPORTS_DIR, mode=0o777, exist_ok=True)
 
 
-# Database credentials
+# Database credentials production
 username = "admin"
 password = quote_plus("Bank@123456")  # URL encode the password
 host = "178.16.138.52"
 port = "3306"
 database = "calculatorDev"
+
+# Database credentials dev
+# username = "root"
+# password = quote_plus("123456")  # URL encode the password
+# host = "localhost"
+# port = "3306"
+# database = "calculatorDev"
+
+
 
 # Database
 DATABASE_URL = f"mysql://{username}:{password}@{host}:{port}/{database}"
