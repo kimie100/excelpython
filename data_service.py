@@ -32,7 +32,7 @@ def get_banks(date_range):
                 ON 
                     a.bankId = b.id 
                 AND 
-                    a.createdAt BETWEEN :start_date AND :end_date
+                    a.updatedAt BETWEEN :start_date AND :end_date
                 GROUP BY 
                     b.id;
             """), {"start_date": start_date, "end_date": end_date})
@@ -52,7 +52,7 @@ def get_transactions(bank_id, date_range=None):
             
             # Base query
             query = """
-                SELECT  a.amount, a.type, a.status, a.createdAt, a.reason,b.code
+                SELECT  a.amount, a.type, a.status, a.updatedAt, a.reason,b.code
                 FROM 
                     Task as a 
                 RIGHT JOIN 
@@ -66,11 +66,11 @@ def get_transactions(bank_id, date_range=None):
             params = {"bank_id": bank_id}
             if date_range:
                 start_date, end_date = date_range
-                query += " AND a.createdAt BETWEEN :start_date AND :end_date"
+                query += " AND a.updatedAt BETWEEN :start_date AND :end_date"
                 params["start_date"] = start_date
                 params["end_date"] = end_date
                 
-            query += " ORDER BY a.createdAt DESC LIMIT :limit OFFSET :offset"
+            query += " ORDER BY a.updatedAt DESC LIMIT :limit OFFSET :offset"
             
             while True:
                 params["limit"] = BATCH_SIZE
@@ -100,7 +100,7 @@ def get_branches(date_range):
             start_date, end_date = date_range
             result = conn.execute(text("""
                SELECT 
-                    IFNULL(SUM(a.amount), 0) AS total,
+                    SUM(CASE WHEN type = 'deposit' THEN amount WHEN type = 'withdraw' THEN -amount ELSE 0 END) AS total,
                     b.code 
                 FROM 
                     Task AS a 
@@ -108,7 +108,7 @@ def get_branches(date_range):
                     Branch AS b 
                 ON 
                     a.branchId = b.id 
-                AND a.createdAt BETWEEN :start_date AND :end_date
+                AND a.updatedAt BETWEEN :start_date AND :end_date
                 GROUP BY 
                 b.id;
             """), {"start_date": start_date, "end_date": end_date})
@@ -125,14 +125,14 @@ def get_total(date_range):
             result = conn.execute(text("""
                 SELECT 
                     SUM(CASE WHEN status = 'PENDING' THEN amount ELSE 0 END) as pending_total,
-                    SUM(CASE WHEN status = 'COMPLETE' THEN amount ELSE 0 END) as complete_total,
+                    SUM(CASE WHEN type = 'deposit' THEN amount WHEN type = 'withdraw' THEN -amount ELSE 0 END) as complete_total,
                     SUM(CASE WHEN status IN ('PENDING', 'COMPLETE') THEN amount ELSE 0 END) as grand_total
                 FROM 
                     Task 
                 WHERE 
                     status IN ('PENDING', 'COMPLETE')
                 AND 
-                    createdAt BETWEEN :start_date AND :end_date
+                    updatedAt BETWEEN :start_date AND :end_date
             """), {"start_date": start_date, "end_date": end_date})
             
             # This will return a single row with the aggregated values
