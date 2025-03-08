@@ -318,9 +318,9 @@ def _add_branch_data(ws, last_row_Bank,date_range):
             logger.error(f"Error adding branch to report: {str(e)}")
             continue
     cell_withdraw = get_column_letter( 2)
-    summary_row = last_row_Bank + last_row_Bank + 1
-    logger.info(f"Successfully lastBranchRow sii: {summary_row}")
-    ws.cell(row=summary_row +1  , column=2, value=f"=SUM({cell_withdraw}{branch_start_row}:{cell_withdraw}{lastBranchRow+8})")
+    summary_row = last_row_Bank +9
+    logger.info(f"Successfully lastBranchRow sii: {last_row_Bank}")
+    ws.cell(row=summary_row   , column=2, value=f"=SUM({cell_withdraw}{branch_start_row}:{cell_withdraw}{lastBranchRow+8})")
 def get_color_by_code(code):
     """Get hex color code by color reference code"""
     return color_code_mapping.get(code, "Color code not found")
