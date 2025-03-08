@@ -18,7 +18,7 @@ username = "admin"
 password = quote_plus("Bank@123456")  # URL encode the password
 host = "178.16.138.52"
 port = "3306"
-database = "calculatorDev"
+database = "calculatorProduction"
 
 # Database credentials dev
 # username = "root"
