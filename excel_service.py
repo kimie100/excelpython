@@ -113,7 +113,8 @@ def create_excel_report(report_id: str,date_range=None):
                     for idx, trans in enumerate(transactions, start=4):
                         try:
                             # Handle potential None or invalid datetime values
-                            created_at = getattr(trans, 'createdAt', None)
+                            created_at = getattr(trans, 'updatedAt', None)
+                            logger.info(f"updatedAt: {created_at}")
                             typeTask = getattr(trans, 'type', '')
                             code = getattr(trans, 'code', '')
                             color_Branch = get_color_by_code(code)
