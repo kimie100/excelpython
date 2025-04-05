@@ -122,28 +122,92 @@ def get_total(date_range):
     try:
         with engine.connect() as conn:
             start_date, end_date = date_range
-            result = conn.execute(text("""
-                SELECT 
-                    SUM(CASE WHEN status = 'PENDING' THEN amount ELSE 0 END) as pending_total,
-                    SUM(CASE WHEN type = 'deposit' THEN amount WHEN type = 'withdraw' THEN -amount ELSE 0 END) as complete_total,
-                    SUM(CASE WHEN status IN ('PENDING', 'COMPLETE') THEN amount ELSE 0 END) as grand_total
-                FROM 
-                    Task 
-                WHERE 
-                    status IN ('PENDING', 'COMPLETE')
-                AND 
-                    updatedAt BETWEEN :start_date AND :end_date
+            
+            # Query for pending total
+            pending_result = conn.execute(text("""
+                SELECT COALESCE(SUM(amount), 0) as pending_total
+                FROM Task
+                WHERE status IN ('PENDING', 'ADMIN_PENDING')
+                OR (status IN ('PENDING', 'ADMIN_PENDING') AND updatedAt BETWEEN :start_date AND :end_date)
+                
             """), {"start_date": start_date, "end_date": end_date})
+            pending_total = pending_result.scalar() or 0
             
-            # This will return a single row with the aggregated values
-            totals = result.fetchone()
+            # Query for complete total (with type adjustment)
+            complete_result = conn.execute(text("""
+                SELECT COALESCE(SUM(
+                    CASE WHEN type = 'deposit' THEN amount 
+                         WHEN type = 'withdraw' THEN -amount 
+                         ELSE 0 
+                    END), 0) as complete_total
+                FROM Task
+                WHERE status = 'COMPLETE'
+                AND updatedAt BETWEEN :start_date AND :end_date
+            """), {"start_date": start_date, "end_date": end_date})
+            complete_total = complete_result.scalar() or 0
             
-            # Return the single row of totals rather than all accounts
+            # Query for grand total
+            grand_result = conn.execute(text("""
+                SELECT COALESCE(SUM(amount), 0) as grand_total
+                FROM Task
+                WHERE status IN ('PENDING', 'COMPLETE')
+                AND updatedAt BETWEEN :start_date AND :end_date
+            """), {"start_date": start_date, "end_date": end_date})
+            grand_total = grand_result.scalar() or 0
+            
             return {
-                "pending_total": totals[0] or 0,
-                "complete_total": totals[1] or 0, 
-                "grand_total": totals[2] or 0
+                "pending_total": pending_total,
+                "complete_total": complete_total, 
+                "grand_total": grand_total
             }
     except Exception as e:
         logger.error(f"Error retrieving task totals: {str(e)}")
+        raise
+
+def get_transactions2(bank_id, date_range=None):
+    try:
+        with engine.connect() as conn:
+            BATCH_SIZE = 1000
+            all_transactions = []
+            offset = 0
+            
+            # Base query
+            query = """
+                SELECT t.amount, t.type, t.status, t.updatedAt, t.reason, b.code
+                FROM Task AS t
+                LEFT JOIN Branch AS b ON t.branchId = b.id
+                WHERE t.bankId =  :bank_id
+            """
+        
+            
+            # Add date filter if provided
+            params = {"bank_id": bank_id}
+            if date_range:
+                start_date, end_date = date_range
+                query += " AND (t.updatedAt BETWEEN :start_date AND :end_date or t.status IN ('PENDING', 'ADMIN_PENDING')  )"
+                params["start_date"] = start_date
+                params["end_date"] = end_date
+                
+            query += " ORDER BY t.updatedAt DESC LIMIT :limit OFFSET :offset"
+            
+            while True:
+                params["limit"] = BATCH_SIZE
+                params["offset"] = offset
+                
+                result = conn.execute(text(query), params)
+                
+                batch = result.fetchall()
+                if not batch:
+                    break
+                    
+                all_transactions.extend(batch)
+                offset += BATCH_SIZE
+                
+                if len(batch) < BATCH_SIZE:
+                    break
+            
+            logger.info(f"Retrieved {len(all_transactions)} transactions for bank_id {bank_id}")
+            return all_transactions
+    except Exception as e:
+        logger.error(f"Error retrieving transactions for bank_id {bank_id}: {str(e)}")
         raise

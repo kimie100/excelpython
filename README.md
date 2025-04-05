@@ -1,4 +1,7 @@
 # to run on local
+python -m uvicorn api:app --reload
+
+
 
 uvicorn api:app --reload
 

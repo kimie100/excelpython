@@ -8,7 +8,7 @@ import pytz
 from datetime import datetime
 
 from config import logger, REPORTS_DIR, malaysia_tz,color_code_mapping
-from data_service import get_accounts, get_banks, get_transactions, get_branches,get_total
+from data_service import get_accounts, get_banks, get_transactions,get_transactions2, get_branches,get_total
 
 def create_excel_report(report_id: str,date_range=None):
     try:
@@ -87,11 +87,12 @@ def create_excel_report(report_id: str,date_range=None):
         for account in accounts:
             try:
                 # Add START
-                cell = ws.cell(row=4, column=current_col, value="START")
+                # cell = ws.cell(row=4, column=current_col, value="START")
                 cell.border = thin_border
                
                 # Get and process transactions for this account
-                transactions = get_transactions(account.id,date_range)
+                # transactions = get_transactions(account.id,date_range)
+                transactions = get_transactions2(account.id,date_range)
                  # ADD BANK 
                 color_bank = "FFC080"
                 color_value_bank ="FFC0C0"
@@ -104,8 +105,8 @@ def create_excel_report(report_id: str,date_range=None):
                 ws.cell(row=row_bank, column=2,).fill = PatternFill(start_color=color_value_bank, end_color=color_value_bank, fill_type="solid")
                 ws.cell(row=row_bank, column=2,).border  = thin_border
                 row_bank += 1
-                logger.info(f"row bank name{name_Bank}: {value_total_Bank}")
-                logger.info(f"row {row_bank}: {row_bank}")
+                # logger.info(f"row bank name{name_Bank}: {value_total_Bank}")
+                # logger.info(f"row {row_bank}: {row_bank}")
                 if not transactions:
                     logger.info(f"list tast for bank ${account.id}: {transactions}")
                 else:
@@ -113,11 +114,15 @@ def create_excel_report(report_id: str,date_range=None):
                     for idx, trans in enumerate(transactions, start=4):
                         try:
                             # Handle potential None or invalid datetime values
+                            
                             created_at = getattr(trans, 'updatedAt', None)
                             logger.info(f"updatedAt: {created_at}")
                             typeTask = getattr(trans, 'type', '')
+                            logger.info(f"row {typeTask}: {typeTask}")
                             code = getattr(trans, 'code', '')
-                            color_Branch = get_color_by_code(code)
+                            if code is not None:
+                                logger.info(f"ada color: {code}")
+                                color_Branch = get_color_by_code(code)
                             if created_at:
                                 if created_at.tzinfo is None:
                                     created_at = pytz.utc.localize(created_at)
@@ -130,7 +135,7 @@ def create_excel_report(report_id: str,date_range=None):
                                 time_str = ''
                                 
                             ws.cell(row=idx, column=current_col).value = date_str
-                            ws.cell(row=idx, column=current_col + 1).value = getattr(trans, 'code', '')
+                            ws.cell(row=idx, column=current_col + 1).value = getattr(trans, 'status', '')
 
                             
                             ws.cell(row=idx, column=current_col + 1).border = thin_border

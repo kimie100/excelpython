@@ -25,7 +25,7 @@ database = "calculatorProduction"
 # password = quote_plus("123456")  # URL encode the password
 # host = "localhost"
 # port = "3306"
-# database = "calculatorDev"
+# database = "calculatorProduction"
 
 
 

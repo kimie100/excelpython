@@ -46,9 +46,9 @@ async def generate_excel(request: ReportRequest, background_tasks: BackgroundTas
         # Check if data exists for the date range by getting the totals
         try:
             totals = get_total(date_range)
-            
+            logger.error(f"Error checking data existence: {totals}")
             # If all totals are 0, there's no data for the report
-            if totals["grand_total"] == 0:
+            if totals["grand_total"] == 0 and totals["pending_total"] == 0 :
                 return {
                     "status": "no_data",
                     "message": "No transaction data available for the selected date range",
