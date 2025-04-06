@@ -123,6 +123,8 @@ def create_excel_report(report_id: str,date_range=None):
                             if code is not None:
                                 logger.info(f"ada color: {code}")
                                 color_Branch = get_color_by_code(code)
+                            else:
+                                color_Branch = 'FFFFFF'
                             if created_at:
                                 if created_at.tzinfo is None:
                                     created_at = pytz.utc.localize(created_at)
