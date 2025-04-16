@@ -173,9 +173,10 @@ def get_transactions2(bank_id, date_range=None):
             
             # Base query
             query = """
-                SELECT t.amount, t.type, t.status, t.updatedAt, t.reason, b.code
+                SELECT t.amount, t.type, t.name, t.status, t.updatedAt, t.reason, b.code,c.bankAccountName
                 FROM Task AS t
                 LEFT JOIN Branch AS b ON t.branchId = b.id
+                LEFT JOIN WithdrawBank AS c ON t.id = c.taskId
                 WHERE t.bankId =  :bank_id
             """
         

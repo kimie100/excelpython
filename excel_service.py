@@ -35,7 +35,7 @@ def create_excel_report(report_id: str,date_range=None):
             raise ValueError("No accounts found")
         
         # Create top row with zeros
-        for col in range(1, len(accounts) * 6 + 3):
+        for col in range(1, len(accounts) * 7 + 3):
             cell = ws.cell(row=1, column=col, value=0)
             cell.fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
             cell.border = thin_border
@@ -64,12 +64,12 @@ def create_excel_report(report_id: str,date_range=None):
             cell.alignment = Alignment(horizontal='center')
             # cell.fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
             cell.border = thin_border
-            ws.merge_cells(start_row=2, start_column=current_col, end_row=2, end_column=current_col + 4)
-            current_col += 6
+            ws.merge_cells(start_row=2, start_column=current_col, end_row=2, end_column=current_col + 5)
+            current_col += 7
         
         ws.cell(row=3, column=1, value="底线").fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
         # Add column headers
-        headers = ["Date", "Note", "Withdraw", "deposit", "Time"]
+        headers = ["Date", "Note", "Name","Withdraw", "deposit", "Time"]
         current_col = 3
         for _ in accounts:
             for header in headers:
@@ -96,7 +96,9 @@ def create_excel_report(report_id: str,date_range=None):
                  # ADD BANK 
                 color_bank = "FFC080"
                 color_value_bank ="FFC0C0"
+                
                 name_Bank = get_column_letter(current_col)
+                logger.info(f"col for name bank ${current_col}: {name_Bank}")
                 value_total_Bank = get_column_letter(current_col + 1)
                 ws.cell(row=row_bank, column=1, value=f"={name_Bank}2")
                 ws.cell(row=row_bank, column=1,).fill = PatternFill(start_color=color_bank, end_color=color_bank, fill_type="solid")
@@ -137,18 +139,29 @@ def create_excel_report(report_id: str,date_range=None):
                                 time_str = ''
                                 
                             ws.cell(row=idx, column=current_col).value = date_str
-                            ws.cell(row=idx, column=current_col + 1).value = getattr(trans, 'status', '')
-
+                            ws.cell(row=idx, column=current_col + 1).value = getattr(trans, 'code', '')
+                            
+                            if typeTask == "WITHDRAW":
+                                status_value = getattr(trans, 'bankAccountName', None)
+                                ws.cell(row=idx, column=current_col + 2).value = status_value if status_value else ""
+                            else:
+                                status_value = getattr(trans, 'name', None)
+                                ws.cell(row=idx, column=current_col + 2).value = status_value if status_value else ""
+                                ws.cell(row=idx, column=current_col + 2).alignment = Alignment(wrap_text=True)
+                                
                             
                             ws.cell(row=idx, column=current_col + 1).border = thin_border
                             if typeTask == "WITHDRAW":
-                                ws.cell(row=idx, column=current_col + 2).value = getattr(trans, 'amount', 0)
+                                ws.cell(row=idx, column=current_col + 3).value = getattr(trans, 'amount', 0)
                             else:
-                                ws.cell(row=idx, column=current_col + 3).value = getattr(trans, 'amount', '')
+                                ws.cell(row=idx, column=current_col + 4).value = getattr(trans, 'amount', '')
                             
                             ws.cell(row=idx, column=current_col + 2).border = thin_border
                             ws.cell(row=idx, column=current_col + 3).border = thin_border
-                            ws.cell(row=idx, column=current_col + 4).value = time_str
+                            ws.cell(row=idx, column=current_col + 4).border = thin_border
+                            ws.cell(row=idx, column=current_col + 5).border = thin_border
+                            ws.cell(row=idx, column=current_col ).border = thin_border
+                            ws.cell(row=idx, column=current_col + 5).value = time_str
                             #color row
                             ws.cell(row=idx, column=current_col).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
                             ws.cell(row=idx, column=current_col + 1).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
@@ -169,7 +182,7 @@ def create_excel_report(report_id: str,date_range=None):
                 logger.error(f"Error processing account {getattr(account, 'id', 'unknown')}: {str(e)}")
                 continue
                 
-            current_col += 6
+            current_col += 7
         
         array_length = len(accounts)
         last_row_Bank = array_length
@@ -207,19 +220,19 @@ def create_excel_report(report_id: str,date_range=None):
 def _add_bank_summary(ws, current_col, total_rowFormula):
     """Helper to add formulas and totals for each bank column"""
     #SUM FOR WITHDRAW
-    cell_withdraw = get_column_letter(current_col + 2)
+    cell_withdraw = get_column_letter(current_col + 3)
     cell_withdraw_formula = f"=SUM({cell_withdraw}4:{cell_withdraw}{total_rowFormula})"
-    ws.cell(row=1, column=current_col+2, value=cell_withdraw_formula)
+    ws.cell(row=1, column=current_col+3, value=cell_withdraw_formula)
     
     #SUM FOR DEPOSIT
-    cell_deposit = get_column_letter(current_col + 3)
+    cell_deposit = get_column_letter(current_col + 4)
     cell_DEPOSIT_formula = f"=SUM({cell_deposit}4:{cell_deposit}{total_rowFormula})"
-    ws.cell(row=1, column=current_col+3, value=cell_DEPOSIT_formula)
+    ws.cell(row=1, column=current_col+4, value=cell_DEPOSIT_formula)
     
     #LAST ROW FOR EACH BANK
     ws.cell(row=total_rowFormula + 1, column=current_col, value="TOTAL")
-    ws.cell(row=total_rowFormula + 1, column=current_col+2, value=cell_withdraw_formula)
-    ws.cell(row=total_rowFormula + 1, column=current_col+3, value=cell_DEPOSIT_formula)
+    ws.cell(row=total_rowFormula + 1, column=current_col+3, value=cell_withdraw_formula)
+    ws.cell(row=total_rowFormula + 1, column=current_col+4, value=cell_DEPOSIT_formula)
     
     #CENTER TOTAL
     cell = ws.cell(row=total_rowFormula + 1, column=current_col)
