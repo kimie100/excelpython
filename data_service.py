@@ -212,3 +212,30 @@ def get_transactions2(bank_id, date_range=None):
     except Exception as e:
         logger.error(f"Error retrieving transactions for bank_id {bank_id}: {str(e)}")
         raise
+
+def create_task(task_data):
+    from sqlalchemy import text
+
+    with engine.begin() as conn:  # 开启事务
+        bank_id = task_data["bankId"]
+        amount = task_data["amount"]
+        task_type = task_data["type"]
+
+        if task_type == "WITHDRAW":
+            # ✅ 允许负数，直接扣款
+            conn.execute(
+                text("UPDATE Bank SET balance = balance - :amount WHERE id = :bank_id"),
+                {"amount": amount, "bank_id": bank_id}
+            )
+        elif task_type == "DEPOSIT":
+            # 加钱
+            conn.execute(
+                text("UPDATE Bank SET balance = balance + :amount WHERE id = :bank_id"),
+                {"amount": amount, "bank_id": bank_id}
+            )
+
+        # 插入任务记录
+        conn.execute(text("""
+            INSERT INTO Task (id, bankId, amount, type, status, updatedAt)
+            VALUES (:id, :bankId, :amount, :type, :status, NOW())
+        """), task_data)
