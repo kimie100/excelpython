@@ -132,7 +132,7 @@ def create_excel_report(report_id: str,date_range=None):
                                     created_at = pytz.utc.localize(created_at)
 
                                 malaysia_time = created_at.astimezone(malaysia_tz)    
-                                date_str = malaysia_time.strftime('%Y-%m-%d')
+                                date_str = malaysia_time.strftime('%d-%m-%Y')
                                 time_str = malaysia_time.strftime('%H:%M:%S')
                             else:
                                 date_str = ''
