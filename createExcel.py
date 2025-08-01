@@ -73,12 +73,22 @@ def get_banks():
         logger.error(f"Error retrieving accounts: {str(e)}")
         raise
 
-def get_transactions(bank_id):
+def get_transactions(bank_id, include_deleted: bool):
     try:
         with engine.connect() as conn:
             BATCH_SIZE = 1000
             all_transactions = []
             offset = 0
+            
+            query = """
+                SELECT amount, type, status, createdAt, reason
+                FROM Task
+                WHERE bankId = :bank_id
+            """
+            if not include_deleted:
+                query += " AND isDelete = 0" 
+
+            query += " ORDER BY createdAt DESC LIMIT :limit OFFSET :offset"
             
             while True:
                 result = conn.execute(text("""
@@ -132,7 +142,7 @@ def get_branchs():
         logger.error(f"Error retrieving branchs: {str(e)}")
         raise
 
-def create_excel_report(report_id: str):
+def create_excel_report(report_id: str, include_deleted: bool):
     try:
         logger.info(f"Starting report generation for report_id: {report_id}")
         wb = Workbook()
@@ -208,7 +218,7 @@ def create_excel_report(report_id: str):
                 cell.border = thin_border
                
                 # Get and process transactions for this account
-                transactions = get_transactions(account.id)
+                transactions = get_transactions(account.id, include_deleted)
                 total_rowFormula =0
                 for idx, trans in enumerate(transactions, start=4):
                     try:
