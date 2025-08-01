@@ -9,6 +9,15 @@ from datetime import datetime
 import logging
 import pytz
 
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+
+
+class ReportRequest(BaseModel):
+    start_date: str
+    end_date: str
+    includeDeleted: bool
+    
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -345,11 +354,11 @@ def create_excel_report(report_id: str):
         raise
 
 @app.post("/generate-excel")
-async def generate_excel(background_tasks: BackgroundTasks):
+async def generate_excel(data: ReportRequest,background_tasks: BackgroundTasks):
     try:
         report_id = datetime.now().strftime('%Y%m%d_%H%M%S')
         logger.info(f"Starting background task for report_id: {report_id}")
-        background_tasks.add_task(create_excel_report, report_id)
+        background_tasks.add_task(create_excel_report, report_id,data.includeDeleted)
         
         return {
             "status": "processing",
