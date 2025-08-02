@@ -59,7 +59,7 @@ def get_transactions(bank_id, date_range=None):
 	                Branch as b
                 ON 
 	                a.branchId = b.id
-                WHERE bankId = :bank_id
+                WHERE bankId = :bank_id and a.isDelete = false
             """
             
             # Add date filter if provided
