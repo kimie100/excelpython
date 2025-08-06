@@ -5,9 +5,12 @@ from datetime import datetime
 from pydantic import BaseModel
 import os
 import logging
+from typing import Optional, Any, Dict, List
 
 from config import logger, REPORTS_DIR
 from excel_service import create_excel_report
+from excel_service2 import create_excel_report2
+from excel_service3 import create_excel_report3
 from data_service import get_total
 app = FastAPI()
 app.add_middleware(
@@ -22,7 +25,7 @@ app.add_middleware(
 class ReportRequest(BaseModel):
     start_date: str = None  # Format: YYYY-MM-DD
     end_date: str = None    # Format: YYYY-MM-DD
-    
+    reportdata: Optional[Dict[Any, Any]] = None
     def get_date_range(self):
         """Convert date strings to proper datetime format with time"""
         today = datetime.now().strftime('%Y-%m-%d')
@@ -62,7 +65,8 @@ async def generate_excel(request: ReportRequest, background_tasks: BackgroundTas
             # Continue with report generation if we can't verify data existence
             
         logger.info(f"Starting background task for report_id: {report_id} with date range: {date_range}")
-        background_tasks.add_task(create_excel_report, report_id, date_range)
+        
+        background_tasks.add_task(create_excel_report2, report_id, date_range,reportdata=request.reportdata)
         
         return {
             "status": "processing",
