@@ -129,7 +129,7 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
                             # Handle potential None or invalid datetime values
                             
                             # created_at = getattr(trans, 'updatedAt', None)
-                            created_at = trans.get('updatedAt')
+                            created_at = trans.get('date')
                             # logger.info(f"updatedAt: {created_at}")
                             # typeTask = getattr(trans, 'type', '')
                             typeTask = trans.get('type')
