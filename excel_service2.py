@@ -20,8 +20,8 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
         ws = wb.active
         
         # Styles
-        light_blue = "B6D7E8"
-        light_pink = "FFD9D9"
+        light_blue = "FFB6D7E8"
+        light_pink = "FFFFD9D9"
         thin_border = Border(
             left=Side(style='thin'),
             right=Side(style='thin'),
@@ -41,7 +41,7 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
             raise ValueError("No accounts found")
         
         # Create top row with zeros
-        for col in range(1, len(accounts) * 7 + 3):
+        for col in range(1, len(accounts) * 8 + 3):
             cell = ws.cell(row=1, column=col, value=0)
             cell.fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
             cell.border = thin_border
@@ -60,7 +60,7 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
             # Handle potential None values
             # name = getattr(account, 'name', '') or ''
             name = account.get("name", "") or ""
-            # logger.info(f"name {name}")
+            
             # account_no = getattr(account, 'accountNo', '') or ''
             account_no = account.get("accountNo", "") or ""
             if isinstance(account_no, int):
@@ -75,11 +75,11 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
             # cell.fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
             cell.border = thin_border
             ws.merge_cells(start_row=2, start_column=current_col, end_row=2, end_column=current_col + 5)
-            current_col += 7
+            current_col += 8
         
         ws.cell(row=3, column=1, value="底线").fill = PatternFill(start_color=light_blue, end_color=light_blue, fill_type="solid")
         # Add column headers
-        headers = ["Date", "Note", "Name","Withdraw", "deposit", "Time"]
+        headers = ["Date", "Note", "Name","Withdraw", "deposit", "Time","Approve"]
         current_col = 3
         for _ in accounts:
             for header in headers:
@@ -99,27 +99,26 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
                 # Add START
                 # cell = ws.cell(row=4, column=current_col, value="START")
                 cell.border = thin_border
-               
+                bankAmount = account.get('totalAmount',0)
                 # Get and process transactions for this account
                 # transactions = get_transactions(account.id,date_range)
                 # transactions = get_transactions2(account.id,date_range)
                 tasks = account.get("tasks", [])
                  # ADD BANK 
-                color_bank = "FFC080"
-                color_value_bank ="FFC0C0"
+                color_bank = "FFFFC080"
+                color_value_bank ="FFFFC0C0"
                 
                 name_Bank = get_column_letter(current_col)
-                logger.info(f"col for name bank ${current_col}: {name_Bank}")
+                
                 value_total_Bank = get_column_letter(current_col + 1)
                 ws.cell(row=row_bank, column=1, value=f"={name_Bank}2")
                 ws.cell(row=row_bank, column=1,).fill = PatternFill(start_color=color_bank, end_color=color_bank, fill_type="solid")
                 ws.cell(row=row_bank, column=1,).border  = thin_border
-                ws.cell(row=row_bank, column=2, value=f"={value_total_Bank}1")
+                ws.cell(row=row_bank, column=2, value=bankAmount)
                 ws.cell(row=row_bank, column=2,).fill = PatternFill(start_color=color_value_bank, end_color=color_value_bank, fill_type="solid")
                 ws.cell(row=row_bank, column=2,).border  = thin_border
                 row_bank += 1
-                logger.info(f"row bank name{name_Bank}: {value_total_Bank}")
-                logger.info(f"row {row_bank}: {row_bank}")
+              
                 if not tasks:
                     logger.info(f"list tast for bank ${account}: {tasks}")
                 else:
@@ -130,17 +129,18 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
                             
                             # created_at = getattr(trans, 'updatedAt', None)
                             created_at = trans.get('date')
-                            # logger.info(f"updatedAt: {created_at}")
+                            
                             # typeTask = getattr(trans, 'type', '')
                             typeTask = trans.get('type')
-                            # logger.info(f"row {typeTask}: {typeTask}")
+                            
                             # code = getattr(trans, 'code', '')
-                            code = trans.get("branchs", {}).get("code", "")
+                            branch_info = trans.get("branchs") or {}
+                            code = branch_info.get("code", "")
                             if code is not None:
-                                # logger.info(f"ada color: {code}")
                                 color_Branch = get_color_by_code(code)
                             else:
-                                color_Branch = 'FFFFFF'
+                                color_Branch = 'FFFFFFFF'
+                            logger.info(f" color_Branch {color_Branch}")    
                             if created_at:
                                 # if created_at.tzinfo is None:
                                     # created_at = pytz.utc.localize(created_at)
@@ -161,7 +161,12 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
                             
                             if typeTask == "WITHDRAW":
                                 # status_value = getattr(trans, 'bankAccountName', None)
-                                status_value =trans.get("WithdrawBank", {}).get("bankAccountName", "")
+                                adminbank = trans.get("bank2") or {}
+                                adminbankname = adminbank.get("name","")
+                                if adminbankname is not None:
+                                    status_value = adminbankname
+                                else:    
+                                    status_value =trans.get("WithdrawBank", {}).get("bankAccountName", "")
                                 ws.cell(row=idx, column=current_col + 2).value = status_value if status_value else ""
                             else:
                                 # status_value = getattr(trans, 'name', None)
@@ -184,6 +189,9 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
                             ws.cell(row=idx, column=current_col + 5).border = thin_border
                             ws.cell(row=idx, column=current_col ).border = thin_border
                             ws.cell(row=idx, column=current_col + 5).value = time_str
+                            adminName =trans.get('users',{}).get('name','')
+                            ws.cell(row=idx, column=current_col + 6).value = adminName
+                            ws.cell(row=idx, column=current_col + 6).border = thin_border
                             #color row
                             ws.cell(row=idx, column=current_col).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
                             ws.cell(row=idx, column=current_col + 1).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
@@ -191,25 +199,27 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
                             ws.cell(row=idx, column=current_col + 3).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
                             ws.cell(row=idx, column=current_col + 4).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
                             total_rowFormula = idx
+                            logger.info(f" idx {idx}")
                         except Exception as e:
                             logger.error(f"Error processing transaction: {str(e)}")
                             continue
                             
                     # Add formulas and totals
+                    logger.info(f" rowformula {total_rowFormula}")
                     _add_bank_summary(ws, current_col, total_rowFormula)
                     
                    
-                    logger.info(f"row_bank: {value_total_Bank}")
+                    
             except Exception as e:
                 name = account.get('name')
                 logger.error(f"Error processing account {name}: {str(e)}")
                 continue
                 
-            current_col += 7
+            current_col += 8
         
         array_length = len(accounts)
         last_row_Bank = array_length
-        logger.info(f"last_row_Bank: {last_row_Bank}")
+       
         # Add bank summary section
         _add_bank_list_summary(ws, last_row_Bank,date_range,totals)
         
@@ -224,7 +234,7 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
         filename = f"financial_report_{report_id}.xlsx"
         filepath = os.path.join(REPORTS_DIR, filename)
         
-        logger.info(f"Attempting to save report to: {filepath}")
+       
         wb.save(filepath)
         
         # Verify file was created and set permissions
@@ -233,7 +243,7 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
             
         os.chmod(filepath, 0o666)
         
-        logger.info(f"Successfully created report: {filepath}")
+      
         return filename
         
     except Exception as e:
@@ -243,6 +253,7 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
 def _add_bank_summary(ws, current_col, total_rowFormula,):
     """Helper to add formulas and totals for each bank column"""
     #SUM FOR WITHDRAW
+    logger.info(f"row_bank: {current_col} rowformula {total_rowFormula}")
     cell_withdraw = get_column_letter(current_col + 3)
     cell_withdraw_formula = f"=SUM({cell_withdraw}4:{cell_withdraw}{total_rowFormula})"
     ws.cell(row=1, column=current_col+3, value=cell_withdraw_formula)
@@ -282,10 +293,10 @@ def _add_bank_list_summary(ws, last_row_Bank,date_range,totals):
     ws.cell(row=summary_row, column=1, value="cash")
     #center cash C0C0FF
     ws.cell(row=summary_row, column=1,).alignment = Alignment(horizontal='center')
-    ws.cell(row=summary_row, column=1,).fill = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
+    ws.cell(row=summary_row, column=1,).fill = PatternFill(start_color="FFDCE6F1", end_color="FFDCE6F1", fill_type="solid")
 
     ws.cell(row=summary_row, column=2, value=f"=SUM(B4:B{3+last_row_Bank})")
-    ws.cell(row=summary_row, column=2,).fill = PatternFill(start_color="FFFF66", end_color="FFFF66", fill_type="solid")
+    ws.cell(row=summary_row, column=2,).fill = PatternFill(start_color="FFFFFF66", end_color="FFFFFF66", fill_type="solid")
     ws.cell(row=summary_row +1, column=1, value="月")
     #merge 月
     ws.merge_cells(start_row=summary_row +1, start_column=1, end_row=summary_row +1, end_column=2)
@@ -302,15 +313,15 @@ def _add_bank_list_summary(ws, last_row_Bank,date_range,totals):
     ws.cell(row=summary_row + 6, column=1, value="")
     ws.cell(row=summary_row + 7, column=1, value="自动计算")
     #color row C5D9F1 DCE6F1
-    ws.cell(row=summary_row + 2, column=1,).fill = PatternFill(start_color="C5D9F1", end_color="C5D9F1", fill_type="solid")
-    ws.cell(row=summary_row + 3, column=1,).fill = PatternFill(start_color="C5D9F1", end_color="C5D9F1", fill_type="solid")
-    ws.cell(row=summary_row + 4, column=1,).fill = PatternFill(start_color="C5D9F1", end_color="C5D9F1", fill_type="solid")
-    ws.cell(row=summary_row + 5, column=1,).fill = PatternFill(start_color="FFFFCC", end_color="FFFFCC", fill_type="solid")
+    ws.cell(row=summary_row + 2, column=1,).fill = PatternFill(start_color="FFC5D9F1", end_color="FFC5D9F1", fill_type="solid")
+    ws.cell(row=summary_row + 3, column=1,).fill = PatternFill(start_color="FFC5D9F1", end_color="FFC5D9F1", fill_type="solid")
+    ws.cell(row=summary_row + 4, column=1,).fill = PatternFill(start_color="FFC5D9F1", end_color="FFC5D9F1", fill_type="solid")
+    ws.cell(row=summary_row + 5, column=1,).fill = PatternFill(start_color="FFFFFFCC", end_color="FFFFFFCC", fill_type="solid")
 
-    ws.cell(row=summary_row + 2, column=2,).fill = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
-    ws.cell(row=summary_row + 3, column=2,).fill = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
-    ws.cell(row=summary_row +4, column=2,).fill = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
-    ws.cell(row=summary_row + 5, column=2,).fill = PatternFill(start_color="FFFFCC", end_color="FFFFCC", fill_type="solid")
+    ws.cell(row=summary_row + 2, column=2,).fill = PatternFill(start_color="FFDCE6F1", end_color="FFDCE6F1", fill_type="solid")
+    ws.cell(row=summary_row + 3, column=2,).fill = PatternFill(start_color="FFDCE6F1", end_color="FFDCE6F1", fill_type="solid")
+    ws.cell(row=summary_row +4, column=2,).fill = PatternFill(start_color="FFDCE6F1", end_color="FFDCE6F1", fill_type="solid")
+    ws.cell(row=summary_row + 5, column=2,).fill = PatternFill(start_color="FFFFCC", end_color="FFFFFFCC", fill_type="solid")
     #border
     ws.cell(row=summary_row, column=1, ).border  = thin_border
     ws.cell(row=summary_row, column=2, ).border  = thin_border
@@ -369,4 +380,4 @@ def _add_branch_data(ws, last_row_Bank,date_range,branch_data):
     ws.cell(row=summary_row   , column=2, value=f"=SUM({cell_withdraw}{branch_start_row}:{cell_withdraw}{lastBranchRow+8})")
 def get_color_by_code(code):
     """Get hex color code by color reference code"""
-    return color_code_mapping.get(code, "Color code not found")
+    return color_code_mapping.get(code, "FFFFFFFF")
