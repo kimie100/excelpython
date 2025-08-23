@@ -198,6 +198,8 @@ def create_excel_report2(report_id: str,date_range=None,reportdata:dict=None):
                             ws.cell(row=idx, column=current_col + 2).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
                             ws.cell(row=idx, column=current_col + 3).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
                             ws.cell(row=idx, column=current_col + 4).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
+                            ws.cell(row=idx, column=current_col + 5).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")                            
+                            ws.cell(row=idx, column=current_col + 6).fill = PatternFill(start_color=color_Branch, end_color=color_Branch, fill_type="solid")
                             total_rowFormula = idx
                             logger.info(f" idx {idx}")
                         except Exception as e:
